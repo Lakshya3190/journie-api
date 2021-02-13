@@ -2,10 +2,21 @@ const express = require('express');
 const cors = require('cors');
 const knex = require('knex');
 
+const db = knex({
+    client: 'pg',
+    connection: {
+        host: '127.0.0.1',
+        user: 'postgres',
+        password: 'root',
+        database: 'Journie-Test'
+    }
+});
+
 const app = express()
 
 app.use(express.json());
 app.use(cors());
+
 
 const today_task = 
     {
@@ -127,9 +138,6 @@ const Data = {
   "version" : "2.8.1"
 }
 
-
-
-
 const overviewData = {
     "time" : 1550476186479,
     "blocks" : [
@@ -185,6 +193,31 @@ const overviewData = {
 
 app.post('/', (req, res) => {
     res.json(today_task.taskProfile);
+})
+
+app.post('/signin', (req, res) => {
+    const {email, password} = this.body;
+    db.select('*').from('user_account').where({
+        email: email,
+        password: password
+    })
+    .then(res.json('Sign-In successful'))
+})
+
+app.post('/register', (req, res) => {
+    const today = new Date().toISOString();
+    const {firstName, lastName, email, password} = req.body;
+    console.log(password);
+    db('user_account')
+    .returning('*')
+    .insert({
+        firstname: firstName,
+        lastname: lastName,
+        email: email,
+        dateofjoin: today,
+        password: password
+    })
+    .then(res.json('Registeration done successfully'))
 })
 
 app.post('/addToday', (req, res) => {
