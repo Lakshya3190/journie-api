@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const knex = require('knex');
+const session = require('express-session');
+const { request, response } = require('express');
+const bcrypt = require('bcrypt-nodejs')
+
 
 const db = knex({
     client: 'pg',
@@ -16,6 +20,11 @@ const app = express()
 
 app.use(express.json());
 app.use(cors());
+app.use(session({
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true
+}))
 
 
 const today_task = 
@@ -195,15 +204,6 @@ app.post('/', (req, res) => {
     res.json(today_task.taskProfile);
 })
 
-app.post('/signin', (req, res) => {
-    const {email, password} = this.body;
-    db.select('*').from('user_account').where({
-        email: email,
-        password: password
-    })
-    .then(res.json('Sign-In successful'))
-})
-
 app.post('/register', (req, res) => {
     const today = new Date().toISOString();
     const {firstName, lastName, email, password} = req.body;
@@ -214,12 +214,30 @@ app.post('/register', (req, res) => {
         firstname: firstName,
         lastname: lastName,
         email: email,
-        dateofjoin: today,
-        password: password
+        password: password,
+        dateofjoin: today
     })
-    .then(res.json('Registeration done successfully'))
+    .then(user => res.json(user[0]))
+    .catch(err => res.status(400).json('Unable to Register'))
 })
 
+app.post('/signin', (req, res) => {
+    const {email, password} = req.body;
+    if(!email || !password){
+        return res.status(400).json("Please fill all required fields")
+    }
+    db.select('*').from('user_account').where('email', '=', email)
+    .then(data => {
+            db.select('*').from('user_account')
+            .where('password', '=', password)
+            .then(console.log(data))
+            .then(user => res.json(user[0]))
+            .catch(err => res.status(400).json('Incorrect Password'))
+        })
+    .then(console.log('Working'))
+    .then(user_data=>res.json(user_data[0]))
+})
+ 
 app.post('/addToday', (req, res) => {
     const {taskType, taskTitle, taskDesc} = req.body;
     today_task.taskProfile.push(
