@@ -230,12 +230,25 @@ app.post('/signin', (req, res) => {
     .then(data => {
             db.select('*').from('user_account')
             .where('password', '=', password)
-            .then(console.log(data))
             .then(user => res.json(user[0]))
             .catch(err => res.status(400).json('Incorrect Password'))
         })
-    .then(console.log('Working'))
-    .then(user_data=>res.json(user_data[0]))
+    .catch(err=>res.status(400).json("Incorrent Credentials"))
+
+})
+
+app.post('/welcome', (req, res) => {
+    const id = req.body.id;
+    console.log(id);
+    if(!id){
+        return res.status(500).json("User Id does not exists");
+    }
+    db.select('*').from('user_account')
+    .where({
+        id: id
+    })
+    .then(user => res.json(user[0]))
+    .catch(err => res.status(501).json("User Id Not Found"))
 })
  
 app.post('/addToday', (req, res) => {
