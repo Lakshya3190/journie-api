@@ -9,20 +9,20 @@ CREATE TABLE user_account (
 
 INSERT INTO user_account (firstName, lastName, email, dateOfJoin) VALUES ('Lakshya', 'Tyagi', 'lakshya.tyagi@gmail.com', 'mypassword', 2020-01-01);
 
-CREATE TABLE User_Data (
+CREATE TABLE user_data (
     SNo SERIAL NOT NULL PRIMARY KEY,
-    userId BIGINT NOT NULL REFERENCES user_account(Id),
-    todayTask VARCHAR(50) NOT NULL REFERENCES today_task_toin(todayTaskId),
-    notes VARCHAR(50) NOT NULL REFERENCES Notes_Join(notes),
-    journal VARCHAR(50) NOT NULL REFERENCES Journal(journalId),
-    dailyTask VARCHAR(50) NOT NULL REFERENCES Daily_Task(dailyTaskId)
+    userid BIGINT NOT NULL REFERENCES user_account(Id),
+    todaytask VARCHAR(50) NOT NULL UNIQUE REFERENCES today_task_join(todaytask),
+    notes VARCHAR(50) NOT NULL UNIQUE REFERENCES notes_join(notes),
+    journal BIGINT NOT NULL UNIQUE REFERENCES journal(journalid),
+    dailytask SERIAL NOT NULL UNIQUE REFERENCES daily_task(dailyTaskId)
 );
 
 
 
 CREATE TABLE today_task_join (
     todayTask VARCHAR(50) NOT NULL,
-    todayTaskId SERIAL NOT NULL REFERENCES today_task(todayTaskId)
+    todayTaskId INT NOT NULL REFERENCES today_task(todayTaskId)
 );
 
 CREATE TABLE today_task(
@@ -31,6 +31,15 @@ CREATE TABLE today_task(
     taskTitle VARCHAR(100) NOT NULL,
     taskDesc VARCHAR(500) NOT NULL,
     isDone INT DEFAULT 0 NOT NULL,
+    entryDate DATE NOT NULL
+);
+
+
+CREATE TABLE schedule_task(
+    sTaskId BIGSERIAL PRIMARY KEY,
+    taskType VARCHAR(10) NOT NULL,
+    taskTitle VARCHAR(100) NOT NULL,
+    taskDesc VARCHAR(500) NOT NULL,
     entryDate DATE NOT NULL
 );
 

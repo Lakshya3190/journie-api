@@ -12,7 +12,7 @@ const db = knex({
         host: '127.0.0.1',
         user: 'postgres',
         password: 'root',
-        database: 'Journie-Test'
+        database: 'journie'
     }
 });
 
@@ -200,9 +200,13 @@ const overviewData = {
   
 
 
-app.post('/', (req, res) => {
-    res.json(today_task.taskProfile);
-})
+/*
+End-Point: base-url/register
+
+End-point to enable user registeration.
+Accepts: firstName, lastName, email, password.
+Returns: user profile.
+*/ 
 
 app.post('/register', (req, res) => {
     const today = new Date().toISOString();
@@ -221,6 +225,16 @@ app.post('/register', (req, res) => {
     .catch(err => res.status(400).json('Unable to Register'))
 })
 
+
+/*
+End-Point: base-url/signin
+
+End-point to enable user signin.
+Accepts: email, password.
+Returns: user profile.
+*/ 
+
+
 app.post('/signin', (req, res) => {
     const {email, password} = req.body;
     if(!email || !password){
@@ -237,6 +251,36 @@ app.post('/signin', (req, res) => {
 
 })
 
+
+/*
+End-Point: base-url/
+
+Called right after user sign-in, accepts user id and 
+returns all current tasks of the user.
+*/ 
+
+app.post('/', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+
+    db.select('*')
+    .from('today_task')
+    .where({
+        userid: userid,
+        entrydate: today_date
+    })
+    .then(taskdata => res.json(taskdata))
+    .catch(err => res.status(400).json(err))
+})
+
+/*
+End-Point: base-URL/welcome
+End-point for welcome messages for user upon signin.
+Accepts: User id
+Responds: User profile.
+*/
+
 app.post('/welcome', (req, res) => {
     const id = req.body.id;
     console.log(id);
@@ -244,25 +288,111 @@ app.post('/welcome', (req, res) => {
         return res.status(500).json("User Id does not exists");
     }
     db.select('*').from('user_account')
-    .where({
-        id: id
+    .where({ 
+        id:id
     })
     .then(user => res.json(user[0]))
     .catch(err => res.status(501).json("User Id Not Found"))
 })
+
+/*
+End-Point: base-URL/addToday
+To add today tasks
+Accepts: userid, taskType, taskTitle, taskDesc
+Responds: All today tasks for the day.
+*/
  
 app.post('/addToday', (req, res) => {
-    const {taskType, taskTitle, taskDesc} = req.body;
-    today_task.taskProfile.push(
-        {
-            id: 4,
-            type: taskType,
-            title: taskTitle,
-            desc: taskDesc
-        }
-    )
-    res.json(today_task.taskProfile);
+    const {userid, taskType, taskTitle, taskDesc} = req.body;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10)
+    db.insert({
+            userid: userid,
+            tasktype: taskType,
+            tasktitle: taskTitle,
+            taskdesc: taskDesc,
+            entrydate: today_date
+        })
+        .into('today_task')
+        .returning('*')
+        .then(taskdata => {
+            db('today_task')
+            .select('*')
+            .where({
+                userid: userid,
+                entrydate: today_date
+            })
+            .then(todaytaskData => res.json(todaytaskData))
+            .catch(err => res.status(400).json("Today tasks not found"))
+        })
 })
+
+/*
+End-Point: base-URL/doneTodayTask
+To mark today tasks as done.
+
+End-Point: base-URL/notdoneTodayTask
+To mark today task as not done.
+
+End-Point: base-URL/deleteTodayTask
+To delete today task.
+*/
+
+app.post('/checkTaskStatus', (req, res) => {
+    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
+    db('today_task')
+    .where({
+        todaytaskid: req.body.taskid
+    })
+    .select('isdone')
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus[0]))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/doneTodayTask', (req, res) => {
+    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
+    db('today_task')
+    .where({
+        todaytaskid: req.body.taskid
+    })
+    .update({
+        isdone: 1
+    })
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/notdoneTodayTask', (req, res) => {
+    console.log("For taskNotDone endpoint, taskid is:", req.body.taskid);
+    db('today_task')
+    .where({
+        todaytaskid: req.body.taskid
+    })
+    .update({
+        isdone: 0
+    })
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/deleteTodayTask', (req, res) => {
+    console.log("Task id is:", req.body.taskid)
+    db('today_task')
+    .where({
+        todaytaskid: req.body.taskid
+    })
+    .del()
+    .then(res.json("Deleted successfully."))
+    .catch(err => res.status(404).json("Count not delete"))
+
+})
+
+
+
+
 
 app.post('/daily', (req, res) => {
     
