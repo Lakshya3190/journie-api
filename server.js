@@ -391,6 +391,107 @@ app.post('/deleteTodayTask', (req, res) => {
 })
 
 
+/*
+End-Point: addSchedule
+To add scheduled tasks.
+
+Accepts: userid, taskType, taskTitle, taskDesc and scheduled date of the task.
+Responds: All today tasks for the day.
+*/
+
+app.post('/addSchedule', (req, res) => {
+    const {userid, taskTitle, taskDesc, scheduleDate} = req.body;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10)
+    db.insert({
+            userid: userid,
+            tasktitle: taskTitle,
+            taskdesc: taskDesc,
+            entrydate: today_date,
+            scheduled_date: scheduleDate
+        })
+        .into('schedule_task')
+        .returning('*')
+        .then(taskdata => {
+            db('schedule_task')
+            .select('*')
+            .where({
+                userid: userid,
+                schedule_date: today_date
+            })
+            .then(todaytaskData => res.json(todaytaskData))
+            .catch(err => res.status(400).json("No task scheduled for today."))
+        })
+})
+
+
+app.post('/scheduleTask', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+
+    db.select('*')
+    .from('schedule_task')
+    .where({
+        userid: userid
+    })
+    .then(taskdata => res.json(taskdata))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/scheduleCheckTaskStatus', (req, res) => {
+    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
+    db('schedule_task')
+    .where({
+        todaytaskid: req.body.taskid
+    })
+    .select('isdone')
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus[0]))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/doneScheduleTask', (req, res) => {
+    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
+    db('schedule_task')
+    .where({
+        scheduledtaskid: req.body.taskid
+    })
+    .update({
+        isdone: 1
+    })
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/notdoneScheduleTask', (req, res) => {
+    console.log("For taskNotDone endpoint, taskid is:", req.body.taskid);
+    db('schedule_task')
+    .where({
+        scheduledtaskid: req.body.taskid
+    })
+    .update({
+        isdone: 0
+    })
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/deleteScheduleTask', (req, res) => {
+    console.log("Task id is:", req.body.taskid)
+    db('schedule_task')
+    .where({
+        scheduledtaskid: req.body.taskid
+    })
+    .del()
+    .then(res.json("Deleted successfully."))
+    .catch(err => res.status(404).json("Count not delete"))
+
+})
+
+
 
 
 
@@ -412,9 +513,6 @@ app.post('/dailyAdd', (req, res) => {
     res.json(daily_task.taskProfile);
 })
 
-app.post('/notes', (req, res) => {
-    res.json(notes.taskProfile);
-})
 
 app.post('/notesAdd', (req, res) => {
     const {taskTitle, taskDesc} = req.body;
