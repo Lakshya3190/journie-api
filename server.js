@@ -416,8 +416,7 @@ app.post('/addSchedule', (req, res) => {
             db('schedule_task')
             .select('*')
             .where({
-                userid: userid,
-                schedule_date: today_date
+                userid: userid
             })
             .then(todaytaskData => res.json(todaytaskData))
             .catch(err => res.status(400).json("No task scheduled for today."))
@@ -493,38 +492,165 @@ app.post('/deleteScheduleTask', (req, res) => {
 
 
 
+/*Daily Tasks*/
 
 
-app.post('/daily', (req, res) => {
+app.post('/addDaily', (req, res) => {
+    const {userid, taskType, taskTitle, taskDesc} = req.body;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10)
+    db.insert({
+            userid: userid,
+            tasktype: taskType,
+            tasktitle: taskTitle,
+            taskdesc: taskDesc,
+        })
+        .into('daily_task')
+        .returning('dailytaskid')
+        .then(taskdata => {
+            const data = parseInt(taskdata)
+            db.insert({
+                dailytaskid: data,
+                taskdate: today_date
+            })
+            .into('daily_task_status')
+            .returning('*')
+            .then(todaytaskData => res.json(todaytaskData[0]))
+            .catch(err => res.status(400).json(err))
+        })
+})
+
+app.post('/dailyTask', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+
+    db.select('*')
+    .from('daily_task')
+    .where({
+        userid: userid
+    })
+    .then(taskdata => res.json(taskdata))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/dailyCheckTaskStatus', (req, res) => {
+    db('daily_task')
+    .where({
+        userid: req.body.userid
+    })
+    .returning('dailytaskid')
+    .then(dailyTaskStatus => {
+        console.log(parseInt(dailyTaskStatus))
+        db('daily_task_status')
+        .where({
+            dailytaskid: dailyTaskStatus
+        })
+        .select('isdone')
+        .returning('isdone')
+        .then(status => res.json(status))
+        .catch(err => res.json(err))
+    })
+})
+
+app.post('/doneDailyTask', (req, res) => {
+    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
+    db('daily_task_status')
+    .where({
+        dailytaskid: req.body.taskid
+    })
+    .update({
+        isdone: 1
+    })
+    .returning('isdone')
+    .then(dailyTaskStatus => res.json(dailyTaskStatus))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/notdoneDailyTask', (req, res) => {
+    console.log("For taskNotDone endpoint, taskid is:", req.body.taskid);
+    db('daily_task_status')
+    .where({
+        dailytaskid: req.body.taskid
+    })
+    .update({
+        isdone: 0
+    })
+    .returning('isdone')
+    .then(dailyTaskStatus => res.json(dailyTaskStatus))
+    .catch(err => res.status(400).json(err))
+})
+
+app.post('/deleteDailyTask', (req, res) => {
+    console.log("Task id is:", req.body.taskid)
+    db('daily_task_status')
+    .where({
+        dailytaskid: req.body.taskid
+    })
+    .del()
+    .then(deleteTask => {
+        db('daily_task')
+        .where({
+            dailytaskid: req.body.taskid
+        })
+        .del()
+        .then(res.json("Successfully Deleted task"))
+        .catch(res.json("Could not delete task."))
+    })
+})
+
+
+
+/*
+Total and Score End-Points
+___Total End-Point: Respond with total number of tasks by particular user for current date.
+            Arg: userid
+            Response: {
+                        count: "5"
+
+                      }
     
-    res.json(daily_task.taskProfile);
-})
+__Score End-Point: Responds with total number of tasks marked as done by user for current date.
 
-app.post('/dailyAdd', (req, res) => {
-    const {taskType, taskTitle, taskDesc} = req.body;
-    daily_task.taskProfile.push(
-        {
-            id: 4,
-            type: taskType,
-            title: taskTitle,
-            desc: taskDesc
-        }
-    )
-    res.json(daily_task.taskProfile);
-})
+            Arg: userid
+            Response: {
+                        count: "3"
+                      }
+
+*/
 
 
-app.post('/notesAdd', (req, res) => {
-    const {taskTitle, taskDesc} = req.body;
-    notes.taskProfile.push(
-        {
-            id: 4,
-            title: taskTitle,
-            desc: taskDesc
-        }
-    )
-    res.json(notes.taskProfile);
+app.post('/todayTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+
+    db('today_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        entrydate: today_date,
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
 })
+
+app.post('/todayTaskScore', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    
+    db('today_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        entrydate: today_date,
+        isdone: 1
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+ 
 
 app.post('/editor', (req, res) => {
     res.json(Data);
@@ -535,9 +661,7 @@ app.post('/editorSave', (req, res) => {
     res.json("Data recieved successfully");
 })
 
-app.post('/overview', (req, res) => {
-    res.json(overviewData)
-})
+
 
 app.listen(3005, () => {
     console.log('The server is running on post 3005');
