@@ -504,20 +504,12 @@ app.post('/addDaily', (req, res) => {
             tasktype: taskType,
             tasktitle: taskTitle,
             taskdesc: taskDesc,
+            entrydate: today_date
         })
         .into('daily_task')
-        .returning('dailytaskid')
-        .then(taskdata => {
-            const data = parseInt(taskdata)
-            db.insert({
-                dailytaskid: data,
-                taskdate: today_date
-            })
-            .into('daily_task_status')
-            .returning('*')
-            .then(todaytaskData => res.json(todaytaskData[0]))
-            .catch(err => res.status(400).json(err))
-        })
+        .returning('*')
+        .then(todaytaskData => res.json(todaytaskData))
+        .catch(err => res.status(400).json(err))
 })
 
 app.post('/dailyTask', (req, res) => {
@@ -535,43 +527,56 @@ app.post('/dailyTask', (req, res) => {
 })
 
 app.post('/dailyCheckTaskStatus', (req, res) => {
-    db('daily_task')
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    db('daily_task_status')
     .where({
-        userid: req.body.userid
+        userid: req.body.userid,
+        taskdate: today_date
     })
-    .returning('dailytaskid')
-    .then(dailyTaskStatus => {
-        console.log(parseInt(dailyTaskStatus))
+    .select('isdone')
+    .returning('isdone')
+    .then(todayTaskStatus => res.json(todayTaskStatus[0]))
+    .catch(err => res.json(NaN))
+})
+
+app.post('/doneDailyTask', (req, res) => {
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
+    db('daily_task_status')
+    .insert({
+        dailytaskid: req.body.taskid,
+        userid: req.body.userid,
+        isdone: 1,
+        taskdate: today_date
+    })
+    .returning('isdone')
+    .then(dailyTaskStatus => res.json(dailyTaskStatus))
+    .catch(updateData => {
+        console.log(updateData)
         db('daily_task_status')
-        .where({
-            dailytaskid: dailyTaskStatus
+        .update({
+            isdone: 1
         })
-        .select('isdone')
+        .where({
+            taskdate: today_date,
+            dailytaskid: req.body.taskid
+        })
         .returning('isdone')
-        .then(status => res.json(status))
+        .then(updateData => res.json(updateData))
         .catch(err => res.json(err))
     })
 })
 
-app.post('/doneDailyTask', (req, res) => {
-    console.log("For taskDone endpoint, taskid is:", req.body.taskid);
-    db('daily_task_status')
-    .where({
-        dailytaskid: req.body.taskid
-    })
-    .update({
-        isdone: 1
-    })
-    .returning('isdone')
-    .then(dailyTaskStatus => res.json(dailyTaskStatus))
-    .catch(err => res.status(400).json(err))
-})
-
 app.post('/notdoneDailyTask', (req, res) => {
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
     console.log("For taskNotDone endpoint, taskid is:", req.body.taskid);
     db('daily_task_status')
     .where({
-        dailytaskid: req.body.taskid
+        dailytaskid: req.body.taskid,
+        taskdate: today_date
     })
     .update({
         isdone: 0
@@ -630,17 +635,34 @@ app.post('/todayTaskTotal', (req, res) => {
     .where({
         userid: userid,
         entrydate: today_date,
+        isdone: 1
     })
     .then(count =>res.json(count[0]))
     .catch(err => res.json(err))
 })
 
-app.post('/todayTaskScore', (req, res) => {
+app.post('/dailyTaskTotal', (req, res) => {
     const userid = req.body.userid;
     const today = new Date().toISOString();
     const today_date = today.slice(0,10);
     
-    db('today_task')
+    db('daily_task_status')
+    .count('isdone')
+    .where({
+        userid: userid,
+        taskdate: today_date,
+        isdone: 1
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/scheduledTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    
+    db('schedule_task')
     .count('isdone')
     .where({
         userid: userid,
@@ -652,14 +674,62 @@ app.post('/todayTaskScore', (req, res) => {
 })
  
 
+/*
+Saving and viewing journal entries.
+
+/editor
+Accepts: userid
+Response: Journal entry for current date.
+
+/editorSave
+Accepts: userid, saveData
+Action: Saves journal data in database for current date.
+*/
+
 app.post('/editor', (req, res) => {
-    res.json(Data);
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+
+    db('journal')
+    .select('journaldata')
+    .where({
+        userid: req.body.userid,
+        entrydate: today_date
+    })
+    .returning('journaldata')
+    .then(showData => res.json(showData[0]))
+    .catch(err => res.json(err))
 })
 
 app.post('/editorSave', (req, res) => {
-    const saveData = req.body;
-    res.json("Data recieved successfully");
+    const {userid, saveData}  = req.body;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    var entryExists = false;
+
+    db('journal')
+    .insert({
+        userid: userid,
+        journaldata: saveData,
+        entrydate: today_date
+    })
+    .returning('*')
+    .then(journalData => res.json(journalData))   
+    .catch(updateData => {
+        db('journal')
+        .update({
+            journaldata: saveData
+        })
+        .where({
+            entrydate: today_date
+        })
+        .returning('journaldata')
+        .then(updateJournal => res.json(updateJournal))
+    })
 })
+
+
+
 
 
 
