@@ -537,7 +537,7 @@ app.post('/dailyCheckTaskStatus', (req, res) => {
     .select('isdone')
     .returning('isdone')
     .then(todayTaskStatus => res.json(todayTaskStatus[0]))
-    .catch(err => res.json(NaN))
+    .catch(err => res.json(err))
 })
 
 app.post('/doneDailyTask', (req, res) => {
@@ -624,8 +624,29 @@ __Score End-Point: Responds with total number of tasks marked as done by user fo
 
 */
 
+/*
+End-Point: /todayTaskTotal
+Action: Total no. of today tasks.
 
+End-Point: /todayTaskDone
+Action: Total no. of today tasks done.
+ */
 app.post('/todayTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+
+    db('today_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        entrydate: today_date
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/todayTaskDone', (req, res) => {
     const userid = req.body.userid;
     const today = new Date().toISOString();
     const today_date = today.slice(0,10);
@@ -642,6 +663,20 @@ app.post('/todayTaskTotal', (req, res) => {
 })
 
 app.post('/dailyTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    
+    db('daily_task')
+    .count('dailytaskid')
+    .where({
+        userid: userid,
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/dailyTaskDone', (req, res) => {
     const userid = req.body.userid;
     const today = new Date().toISOString();
     const today_date = today.slice(0,10);
@@ -666,7 +701,20 @@ app.post('/scheduledTaskTotal', (req, res) => {
     .count('isdone')
     .where({
         userid: userid,
-        entrydate: today_date,
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/scheduledTaskDone', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    
+    db('schedule_task')
+    .count('isdone')
+    .where({
+        userid: userid,
         isdone: 1
     })
     .then(count =>res.json(count[0]))
@@ -725,6 +773,7 @@ app.post('/editorSave', (req, res) => {
         })
         .returning('journaldata')
         .then(updateJournal => res.json(updateJournal))
+        .catch(err => res.json("No Data Exists"))
     })
 })
 
