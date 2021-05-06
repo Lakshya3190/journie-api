@@ -27,179 +27,6 @@ app.use(session({
 }))
 
 
-const today_task = 
-    {
-        taskProfile: [     
-            {
-                id: 1,
-                type: "Task",
-                title: "Workout",
-                desc: "Push, Core & 3x Circuit"
-            },
-            {
-                id: 2,
-                type: "Task",
-                title: "Cardio",
-                desc: "Run, 1.5 km"
-            },
-            {
-                id: 3,
-                type: "Event",
-                title: "Subhecha's Birthday",
-                desc: "20 July, 2021, she turns 22!"
-            }
-    ]
-}
-
-const daily_task = 
-    {
-        taskProfile: [     
-            {
-                id: 1,
-                type: "Task",
-                title: "Eat Healthy",
-                desc: "Focus on intermittent fasting"
-            },
-            {
-                id: 2,
-                type: "Task",
-                title: "LeetCode",
-                desc: "2x LeetCode Questions"
-            },
-            {
-                id: 3,
-                type: "Task",
-                title: "Guitar",
-                desc: "Spend an hour practicing the guitar."
-            }
-    ]
-}
-
-const notes = 
-    {
-        taskProfile: [     
-            {
-                id: 1,
-                title: "Research",
-                desc: "I could work with genetic algorithms for my paper."
-            },
-            {
-                id: 2,
-                title: "Explore GRE?",
-                desc: "Maybe I should explore writing GRE for further studies."
-            },
-            {
-                id: 3,
-                title: "Productivity",
-                desc: "I need to be way more productive."
-            }
-    ]
-}
-
-const Data = {
-  "time" : 1550476186479,
-  "blocks" : [
-    {
-      "type": "header",
-      "data": {
-         "text": "I visited my grandmother!",
-         "level": 2
-      }
-   },
-   {
-      "type": "paragraph",
-      "data": {
-         "text": "I visited my grandmother today, not only was it extremely fun, I also learned a lot. I got to ride horses and explore grandma's farm. It was super interesting!"
-      }
-   },
-   {
-      "type": "header",
-      "data": {
-         "text": "The animals she had were:",
-         "level": 3
-      }
-   },
-   {
-      "type": "list",
-      "data": {
-         "style": "unordered",
-         "items": [
-            "Dogs",
-            "Cows, Bulls",
-            "And Pigs!"
-         ]
-      }
-   },
-   {
-      "type": "header",
-      "data": {
-         "text": "I also completed my first ever marathon.",
-         "level": 3
-      }
-   },
-   {
-      "type": "paragraph",
-      "data": {
-         "text": "I am so glad I could complete this marathon in time. Not only am I looking forward to participating in more, I also want to improve my half marathon timings in the next few months. Let's see how it goes!"
-      }
-   }
-  ],
-  "version" : "2.8.1"
-}
-
-const overviewData = {
-    "time" : 1550476186479,
-    "blocks" : [
-      {
-        "type": "header",
-        "data": {
-           "text": "Editor",
-           "level": 2
-        }
-     },
-     {
-        "type": "paragraph",
-        "data": {
-           "text": "Hey. Meet the new Editor. On this page you can see it in action — try to edit this text. Source code of the page contains the example of connection and configuration."
-        }
-     },
-     {
-        "type": "header",
-        "data": {
-           "text": "Key features",
-           "level": 3
-        }
-     },
-     {
-        "type": "list",
-        "data": {
-           "style": "unordered",
-           "items": [
-              "It is a block-styled editor",
-              "It returns clean data output in JSON",
-              "Designed to be extendable and pluggable with a simple API"
-           ]
-        }
-     },
-     {
-        "type": "header",
-        "data": {
-           "text": "What does it mean «block-styled editor»",
-           "level": 3
-        }
-     },
-     {
-        "type": "paragraph",
-        "data": {
-           "text": "Workspace in classic editors is made of a single contenteditable element, used to create different HTML markups. Editor.js <mark class=\"cdx-marker\">workspace consists of separate Blocks: paragraphs, headings, images, lists, quotes, etc</mark>. Each of them is an independent contenteditable element (or more complex structure) provided by Plugin and united by Editor's Core."
-        }
-     }
-    ],
-    "version" : "2.8.1"
-  }
-  
-
-
 /*
 End-Point: base-url/register
 
@@ -778,6 +605,162 @@ app.post('/editorSave', (req, res) => {
 })
 
 
+/*
+Overview
+*/
+/*app.post('/overviewTodayTask', (req, res) => {
+    const viewDate  = req.body.viewDate;
+    const userid = req.body.userid
+    console.log("Datepicker Data", viewDate.slice(0,10))
+    console.log("Datepicker UserID", userid)
+    db('today_task')
+    .where({
+        userid: userid,
+        entrydate: viewDate.slice(0,10)
+    })
+    .select('*')
+    .returning('*')
+    .then(overviewTodayTaskData => res.json(overviewTodayTaskData))
+    .catch(err => res.json("No Data Exists"))
+})*/
+
+Date.prototype.addDays = function(days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+}
+
+app.post('/overviewTodayTask', (req, res) => {
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1.addDays(1);
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+    db('today_task')
+    .where({
+        userid: req.body.userid,
+        entrydate: overviewEntryDate
+    })
+    .select('*')
+    .returning('*')
+    .then(overviewTodayTaskData => res.json(overviewTodayTaskData))
+    .catch(err => res.json("No Data Exists"))
+})
+
+app.post('/overviewJournal', (req, res) => {
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+    db('journal')
+    .where({
+        userid: req.body.userid,
+        entrydate: overviewEntryDate
+    })
+    .select('*')
+    .returning('*')
+    .then(overviewJournalData => res.json(overviewJournalData))
+    .catch(err => res.json("No Data Exists"))
+})
+
+app.post('/overviewTodayTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+
+    db('today_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        entrydate: overviewEntryDate
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/overviewTodayTaskDone', (req, res) => {
+    const userid = req.body.userid;
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+
+    db('today_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        entrydate: overviewEntryDate,
+        isdone: 1
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/overviewDailyTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+    
+    db('daily_task')
+    .count('dailytaskid')
+    .where({
+        userid: userid,
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/dailyTaskDone', (req, res) => {
+    const userid = req.body.userid;
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+    
+    db('daily_task_status')
+    .count('isdone')
+    .where({
+        userid: userid,
+        taskdate: overviewEntryDate,
+        isdone: 1
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/overviewScheduledTaskTotal', (req, res) => {
+    const userid = req.body.userid;
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+    
+    db('schedule_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
+
+app.post('/overviewScheduledTaskDone', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    
+    db('schedule_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        isdone: 1
+    })
+    .then(count =>res.json(count[0]))
+    .catch(err => res.json(err))
+})
 
 
 
