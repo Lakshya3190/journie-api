@@ -648,24 +648,25 @@ app.post('/overviewTodayTask', (req, res) => {
 
 app.post('/overviewJournal', (req, res) => {
     const viewDate1 = new Date(req.body.viewDate);
-    overviewDate = viewDate1;
+    overviewDate = viewDate1.addDays(1);
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
+    console.log("Dates are:", overviewEntryDate)
     db('journal')
     .where({
         userid: req.body.userid,
         entrydate: overviewEntryDate
     })
-    .select('*')
-    .returning('*')
-    .then(overviewJournalData => res.json(overviewJournalData))
+    .select('journaldata')
+    .returning('journaldata')
+    .then(overviewJournalData => res.json(overviewJournalData[0]))
     .catch(err => res.json("No Data Exists"))
 })
 
 app.post('/overviewTodayTaskTotal', (req, res) => {
     const userid = req.body.userid;
     const viewDate1 = new Date(req.body.viewDate);
-    overviewDate = viewDate1;
+    overviewDate = viewDate1.addDays(1);;
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
 
@@ -682,7 +683,7 @@ app.post('/overviewTodayTaskTotal', (req, res) => {
 app.post('/overviewTodayTaskDone', (req, res) => {
     const userid = req.body.userid;
     const viewDate1 = new Date(req.body.viewDate);
-    overviewDate = viewDate1;
+    overviewDate = viewDate1.addDays(1);;
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
 
@@ -700,7 +701,7 @@ app.post('/overviewTodayTaskDone', (req, res) => {
 app.post('/overviewDailyTaskTotal', (req, res) => {
     const userid = req.body.userid;
     const viewDate1 = new Date(req.body.viewDate);
-    overviewDate = viewDate1;
+    overviewDate = viewDate1.addDays(1);;
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
     
@@ -713,10 +714,10 @@ app.post('/overviewDailyTaskTotal', (req, res) => {
     .catch(err => res.json(err))
 })
 
-app.post('/dailyTaskDone', (req, res) => {
+app.post('/overviewDailyTaskDone', (req, res) => {
     const userid = req.body.userid;
     const viewDate1 = new Date(req.body.viewDate);
-    overviewDate = viewDate1;
+    overviewDate = viewDate1.addDays(1);;
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
     
@@ -734,7 +735,7 @@ app.post('/dailyTaskDone', (req, res) => {
 app.post('/overviewScheduledTaskTotal', (req, res) => {
     const userid = req.body.userid;
     const viewDate1 = new Date(req.body.viewDate);
-    overviewDate = viewDate1;
+    overviewDate = viewDate1.addDays(1);;
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
     
@@ -749,8 +750,10 @@ app.post('/overviewScheduledTaskTotal', (req, res) => {
 
 app.post('/overviewScheduledTaskDone', (req, res) => {
     const userid = req.body.userid;
-    const today = new Date().toISOString();
-    const today_date = today.slice(0,10);
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1.addDays(1);;
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
     
     db('schedule_task')
     .count('isdone')
