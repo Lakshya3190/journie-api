@@ -860,7 +860,7 @@ app.post('/productivityScore', (req, res) => {
                                 entry_date: today_date
                             })
                             .returning('*')
-                            .then(updatedScore => res.json(updatedScore))
+                            .then(updatedScore => res.json(updatedScore[0]))
                         })
                         });
 
@@ -875,7 +875,6 @@ app.post('/productivityScore', (req, res) => {
             })
         })
     })
-
      
     const { spawn } = require('child_process');
     const pyprog = spawn('python', ['./multi-node-tree.py', 4, 2, 4, 2, 1]);
@@ -897,6 +896,40 @@ app.post('/productivityScore', (req, res) => {
         res.json(productivity_score_args);
     })
     .catch(err => console.log("Error is:", err.toString('utf8')))*/
+})
+
+/* Productivity Overview*/
+app.post('/overviewProductivityScore', (req, res) => {
+    const userid = req.body.userid;
+    const viewDate1 = new Date(req.body.viewDate);
+    overviewDate = viewDate1.addDays(1);
+    const str_overviewDate = overviewDate.toISOString()
+    const overviewEntryDate = str_overviewDate.slice(0,10)
+
+    db('productivity_score')
+    .where({
+        userid: userid,
+        entry_date: overviewEntryDate
+    })
+    .returning('*')
+    .then(prodScore => res.json(prodScore[0]))
+    .catch(err => res.json(err))
+})
+
+/*Past 7 days productivity - Dashboard*/ 
+app.post('/dashboardProductivityScore', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    var past_week = new Date();
+    past_week.setDate(past_week.getDate()-7);
+
+    db('productivity_score')
+    .where('entry_date', '>=', past_week)
+    .where('entry_date', '<=', today)
+    .returning('*')
+    .then(prodScore => res.json(prodScore))
+    .catch(err => res.json(err))
 })
 
 app.listen(3005, () => {
