@@ -4,6 +4,8 @@ const knex = require('knex');
 const session = require('express-session');
 const { request, response } = require('express');
 const bcrypt = require('bcrypt-nodejs')
+const {spawn} = require('child_process');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
 
 const db = knex({
@@ -651,6 +653,7 @@ app.post('/overviewJournal', (req, res) => {
     overviewDate = viewDate1.addDays(1);
     const str_overviewDate = overviewDate.toISOString()
     const overviewEntryDate = str_overviewDate.slice(0,10)
+    console.log("User ID is:", req.body.userid)
     console.log("Dates are:", overviewEntryDate)
     db('journal')
     .where({
@@ -660,7 +663,7 @@ app.post('/overviewJournal', (req, res) => {
     .select('journaldata')
     .returning('journaldata')
     .then(overviewJournalData => res.json(overviewJournalData[0]))
-    .catch(err => res.json("No Data Exists"))
+    .catch(err => res.json(err))
 })
 
 app.post('/overviewTodayTaskTotal', (req, res) => {
@@ -765,8 +768,136 @@ app.post('/overviewScheduledTaskDone', (req, res) => {
     .catch(err => res.json(err))
 })
 
+/*
+Sentiment Analysis
+*/
 
 
+
+
+/*
+let runPy = new Promise(function(success, nosuccess) {
+
+
+    const { spawn } = require('child_process');
+    const pyprog = spawn('python', ['./multi-node-tree.py', 4, 75, 4, 75, 1]);
+
+    pyprog.stdout.on('data', function(data) {
+
+        success(data);
+    });
+
+    pyprog.stderr.on('data', (data) => {
+
+        nosuccess(data);
+    });
+});
+*/
+
+app.post('/productivityScore', (req, res) => {
+    const userid = req.body.userid;
+    const today = new Date().toISOString();
+    const today_date = today.slice(0,10);
+    var well = 10;
+    /*Today Task Total*/
+    db('today_task')
+    .count('isdone')
+    .where({
+        userid: userid,
+        entrydate: today_date
+    })
+    .then(input1 => {
+        const in1 = parseInt(input1[0].count)
+        db('today_task')
+        .count('isdone')
+        .where({
+            userid: userid,
+            entrydate: today_date,
+            isdone: 1
+        })
+        .then(input2 => {
+            const in2 = parseInt(input2[0].count)
+            db('daily_task')
+            .count('dailytaskid')
+            .where({
+                userid: userid
+            })
+            .then(input3 => {
+                in3 = parseInt(input3[0].count)
+                db('daily_task_status')
+                .count('isdone')
+                .where({
+                    userid: userid,
+                    taskdate: today_date,
+                    isdone: 1
+                })
+                .then(input4 => {
+                    let productivity;
+                    let draw;
+                    in4 = parseInt(input4[0].count)
+                    const pyprog = spawn('python', ['./multi-node-tree.py', in1, in2, in3, in4, 0]);
+
+                    pyprog.stdout.on('data', function(data) {
+                        console.log("Data1", data.toString('utf8'));
+                        productivity = parseFloat(data.toString('utf8')).toFixed(2)
+                        draw = productivity;
+                        console.log("This is the output", productivity);
+                        db('productivity_score')
+                        .insert({
+                            userid: userid,
+                            score: parseFloat(productivity).toFixed(2),
+                            entry_date: today_date
+                        })
+                        .returning('score')
+                        .then(prodScore => res.json(prodScore))
+                        .catch(updateScore => {
+                            db('productivity_score')
+                            .update({
+                                score: parseFloat(productivity).toFixed(2)
+                            })
+                            .where({
+                                userid: userid,
+                                entry_date: today_date
+                            })
+                            .returning('*')
+                            .then(updatedScore => res.json(updatedScore))
+                        })
+                        });
+
+                    pyprog.stderr.on('data', (data) => {
+                        console.log("Error is:", data.toString('utf8'))
+                    });
+
+                    /*res.json({
+                        productivity_score: JSON.stringify(productivity_score)
+                    })*/
+                })
+            })
+        })
+    })
+
+     
+    const { spawn } = require('child_process');
+    const pyprog = spawn('python', ['./multi-node-tree.py', 4, 2, 4, 2, 1]);
+
+    pyprog.stdout.on('data', function(data) {
+        console.log(data.toString('utf8'));
+        productivity_score = JSON.parse(data.toString('utf8'))
+    });
+
+
+    pyprog.stderr.on('data', (data) => {
+        console.log("Error is:", data.toString('utf8'))
+    });
+
+    /*runPy
+    .then(function(fromRunpy) {
+        console.log(fromRunpy.toString('utf8'));
+        productivity_score = JSON.parse(fromRunpy.toString('utf8'))
+        res.json(productivity_score_args);
+    })
+    .catch(err => console.log("Error is:", err.toString('utf8')))*/
+})
 
 app.listen(3005, () => {
     console.log('The server is running on post 3005');
