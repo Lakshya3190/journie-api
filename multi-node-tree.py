@@ -6,36 +6,40 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
 if int(sys.argv[1])>0:
-    percent1 = (int(sys.argv[2])/int(sys.argv[1]))*100
+    percent1 = (int(sys.argv[2])//int(sys.argv[1]))*100
 else:
     percent1 = 0
 
 if int(sys.argv[3])>0:
-    percent2 = (int(sys.argv[4])/int(sys.argv[3]))*100
+    percent2 = (int(sys.argv[4])//int(sys.argv[3]))*100
 else:
     percent2 = 0
 
 # FLU 1
 
-TodayTaskTotal = ctrl.Antecedent(np.arange(0, 8 , 1), 'TodayTaskTotal')
+TodayTaskTotal = ctrl.Antecedent(np.arange(0, 10 , 1), 'TodayTaskTotal')
 TodayTaskDone = ctrl.Antecedent(np.arange(0, 100 , 1), 'TodayTaskDone')
 task_productivity = ctrl.Consequent(np.arange(0, 10, 1), 'task_productivity')
 
-TodayTaskTotal.automf(3)
 TodayTaskDone.automf(3)
+
+
+TodayTaskTotal['poor'] = fuzz.trimf(TodayTaskTotal.universe, [0, 0, 2])
+TodayTaskTotal['average'] = fuzz.trimf(TodayTaskTotal.universe, [0, 4, 8])
+TodayTaskTotal['good'] = fuzz.trimf(TodayTaskTotal.universe, [4, 10,10])
 
 task_productivity['low'] = fuzz.trimf(task_productivity.universe, [0, 0, 5])
 task_productivity['medium'] = fuzz.trimf(task_productivity.universe, [0, 5, 10])
 task_productivity['high'] = fuzz.trimf(task_productivity.universe, [5, 10, 10])
 
 rule1 = ctrl.Rule(TodayTaskTotal['poor'] & TodayTaskDone['poor'], task_productivity['low'])
-rule2 = ctrl.Rule(TodayTaskTotal['poor'] & TodayTaskDone['average'], task_productivity['low'])
-rule3 = ctrl.Rule(TodayTaskTotal['poor'] & TodayTaskDone['good'], task_productivity['medium'])
+rule2 = ctrl.Rule(TodayTaskTotal['poor'] & TodayTaskDone['average'], task_productivity['medium'])
+rule3 = ctrl.Rule(TodayTaskTotal['poor'] & TodayTaskDone['good'], task_productivity['high'])
 rule4= ctrl.Rule(TodayTaskTotal['average'] & TodayTaskDone['poor'], task_productivity['low'])
 rule5= ctrl.Rule(TodayTaskTotal['average'] & TodayTaskDone['average'], task_productivity['medium'])
-rule6= ctrl.Rule(TodayTaskTotal['average'] & TodayTaskDone['good'], task_productivity['medium'])
-rule7= ctrl.Rule(TodayTaskTotal['good'] & TodayTaskDone['poor'], task_productivity['low'])
-rule8= ctrl.Rule(TodayTaskTotal['good'] & TodayTaskDone['average'], task_productivity['medium'])
+rule6= ctrl.Rule(TodayTaskTotal['average'] & TodayTaskDone['good'], task_productivity['high'])
+rule7= ctrl.Rule(TodayTaskTotal['good'] & TodayTaskDone['poor'], task_productivity['medium'])
+rule8= ctrl.Rule(TodayTaskTotal['good'] & TodayTaskDone['average'], task_productivity['high'])
 rule9= ctrl.Rule(TodayTaskTotal['good'] & TodayTaskDone['good'], task_productivity['high'])
 
 
@@ -45,21 +49,24 @@ DailyTaskTotal = ctrl.Antecedent(np.arange(0, 6 , 1), 'DailyTaskTotal')
 DailyTaskDone = ctrl.Antecedent(np.arange(0, 100 , 1), 'DailyTaskDone')
 daily_task_productivity = ctrl.Consequent(np.arange(0, 10, 1), 'daily_task_productivity')
 
-DailyTaskTotal.automf(3)
 DailyTaskDone.automf(3)
+
+DailyTaskTotal['poor'] = fuzz.trimf(DailyTaskTotal.universe, [0, 0, 2])
+DailyTaskTotal['average'] = fuzz.trimf(DailyTaskTotal.universe, [0, 4, 8])
+DailyTaskTotal['good'] = fuzz.trimf(DailyTaskTotal.universe, [4, 10,10])
 
 daily_task_productivity['low'] = fuzz.trimf(daily_task_productivity.universe, [0, 0, 5])
 daily_task_productivity['medium'] = fuzz.trimf(daily_task_productivity.universe, [0, 5, 10])
 daily_task_productivity['high'] = fuzz.trimf(daily_task_productivity.universe, [5, 10, 10])
 
 daily_rule1 = ctrl.Rule(DailyTaskTotal['poor'] & DailyTaskDone['poor'], daily_task_productivity['low'])
-daily_rule2 = ctrl.Rule(DailyTaskTotal['poor'] & DailyTaskDone['average'], daily_task_productivity['low'])
-daily_rule3 = ctrl.Rule(DailyTaskTotal['poor'] & DailyTaskDone['good'], daily_task_productivity['medium'])
+daily_rule2 = ctrl.Rule(DailyTaskTotal['poor'] & DailyTaskDone['average'], daily_task_productivity['medium'])
+daily_rule3 = ctrl.Rule(DailyTaskTotal['poor'] & DailyTaskDone['good'], daily_task_productivity['high'])
 daily_rule4= ctrl.Rule(DailyTaskTotal['average'] & DailyTaskDone['poor'], daily_task_productivity['low'])
 daily_rule5= ctrl.Rule(DailyTaskTotal['average'] & DailyTaskDone['average'], daily_task_productivity['medium'])
-daily_rule6= ctrl.Rule(DailyTaskTotal['average'] & DailyTaskDone['good'], daily_task_productivity['medium'])
+daily_rule6= ctrl.Rule(DailyTaskTotal['average'] & DailyTaskDone['good'], daily_task_productivity['high'])
 daily_rule7= ctrl.Rule(DailyTaskTotal['good'] & DailyTaskDone['poor'], daily_task_productivity['low'])
-daily_rule8= ctrl.Rule(DailyTaskTotal['good'] & DailyTaskDone['average'], daily_task_productivity['medium'])
+daily_rule8= ctrl.Rule(DailyTaskTotal['good'] & DailyTaskDone['average'], daily_task_productivity['high'])
 daily_rule9= ctrl.Rule(DailyTaskTotal['good'] & DailyTaskDone['good'], daily_task_productivity['high'])
 
 # FLU 3
@@ -76,13 +83,13 @@ total_task_productivity_score['medium'] = fuzz.trimf(total_task_productivity_sco
 total_task_productivity_score['high'] = fuzz.trimf(total_task_productivity_score.universe, [5, 10, 10])
 
 all_task_rule1 = ctrl.Rule(TodayTask['poor'] & DailyTask['poor'], total_task_productivity_score['low'])
-all_task_rule2 = ctrl.Rule(TodayTask['poor'] & DailyTask['average'], total_task_productivity_score['low'])
+all_task_rule2 = ctrl.Rule(TodayTask['poor'] & DailyTask['average'], total_task_productivity_score['medium'])
 all_task_rule3 = ctrl.Rule(TodayTask['poor'] & DailyTask['good'], total_task_productivity_score['medium'])
 all_task_rule4= ctrl.Rule(TodayTask['average'] & DailyTask['poor'], total_task_productivity_score['low'])
 all_task_rule5= ctrl.Rule(TodayTask['average'] & DailyTask['average'], total_task_productivity_score['medium'])
-all_task_rule6= ctrl.Rule(TodayTask['average'] & DailyTask['good'], total_task_productivity_score['medium'])
-all_task_rule7= ctrl.Rule(TodayTask['good'] & DailyTask['poor'], total_task_productivity_score['low'])
-all_task_rule8= ctrl.Rule(TodayTask['good'] & DailyTask['average'], total_task_productivity_score['medium'])
+all_task_rule6= ctrl.Rule(TodayTask['average'] & DailyTask['good'], total_task_productivity_score['high'])
+all_task_rule7= ctrl.Rule(TodayTask['good'] & DailyTask['poor'], total_task_productivity_score['medium'])
+all_task_rule8= ctrl.Rule(TodayTask['good'] & DailyTask['average'], total_task_productivity_score['high'])
 all_task_rule9= ctrl.Rule(TodayTask['good'] & DailyTask['good'], total_task_productivity_score['high'])
 
 # FLU 4
@@ -105,8 +112,8 @@ final_productivity_score['high'] = fuzz.trimf(final_productivity_score.universe,
 
 final_rule1 = ctrl.Rule(F_TaskScore['low'] & SentimentAnalysis['negative'], final_productivity_score['low'])
 final_rule2 = ctrl.Rule(F_TaskScore['low'] & SentimentAnalysis['positive'], final_productivity_score['low'])
-final_rule3= ctrl.Rule(F_TaskScore['medium'] & SentimentAnalysis['negative'], final_productivity_score['low'])
-final_rule4= ctrl.Rule(F_TaskScore['medium'] & SentimentAnalysis['positive'], final_productivity_score['medium'])
+final_rule3= ctrl.Rule(F_TaskScore['medium'] & SentimentAnalysis['negative'], final_productivity_score['medium'])
+final_rule4= ctrl.Rule(F_TaskScore['medium'] & SentimentAnalysis['positive'], final_productivity_score['high'])
 final_rule5= ctrl.Rule(F_TaskScore['high'] & SentimentAnalysis['negative'], final_productivity_score['medium'])
 final_rule6= ctrl.Rule(F_TaskScore['high'] & SentimentAnalysis['positive'], final_productivity_score['high'])
 

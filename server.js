@@ -835,7 +835,7 @@ app.post('/productivityScore', (req, res) => {
                     let productivity;
                     let draw;
                     in4 = parseInt(input4[0].count)
-                    const pyprog = spawn('python', ['./multi-node-tree.py', in1, in2, in3, in4, 0]);
+                    const pyprog = spawn('python', ['./multi-node-tree.py', in1, in2, in3, in4, 1]);
 
                     pyprog.stdout.on('data', function(data) {
                         console.log("Data1", data.toString('utf8'));
@@ -875,19 +875,6 @@ app.post('/productivityScore', (req, res) => {
             })
         })
     })
-     
-    const { spawn } = require('child_process');
-    const pyprog = spawn('python', ['./multi-node-tree.py', 4, 2, 4, 2, 1]);
-
-    pyprog.stdout.on('data', function(data) {
-        console.log(data.toString('utf8'));
-        productivity_score = JSON.parse(data.toString('utf8'))
-    });
-
-
-    pyprog.stderr.on('data', (data) => {
-        console.log("Error is:", data.toString('utf8'))
-    });
 
     /*runPy
     .then(function(fromRunpy) {
